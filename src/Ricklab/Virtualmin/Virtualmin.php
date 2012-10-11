@@ -58,5 +58,31 @@ class Virtualmin {
         
         return json_decode($request->send()->getBody());
     }
+    
+    /**
+     * 
+     * @param string $domain
+     * @return \Ricklab\Virtualmin\virtualHost
+     */
+    public function getVirtualHostByDomain($domain) {
+        return VirtualHost::getByDomain($this, $domain);
+    }
+    
+    /**
+     * 
+     * @param string $username
+     * @return \Ricklab\Virtualmin\virtualHost
+     */
+    public function getVirtualHostByUsername($username) {
+        return VirtualHost::getByUsername($this, $username);
+    }
+    
+    /**
+     * 
+     * @return \Ricklab\Virtualmin\virtualHost
+     */
+    public function getAllVirtualHosts() {
+        return VirtualHost::get($this);
+    }
 
 }
