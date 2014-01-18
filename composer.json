@@ -1,0 +1,24 @@
+{
+    "name": "ricklab/virtualmin",
+    "description": "Interface with the VirtualMin HTTP API",
+    "keywords": ["virtualmin", "virtualhost"],
+    "version": "1.1.0-dev",
+    "license": "BSD-3-Clause",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Rick Ogden",
+            "email": "rick@rickogden.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4",
+        "guzzle/guzzle": "3.8.*"
+
+    },
+    "autoload": {
+        "psr-0": {
+            "Ricklab\\Virtualmin": "src/"
+        }
+    }
+}
