@@ -11,15 +11,37 @@ use Guzzle\Http\Client;
 
 require_once __DIR__ . '/VirtualHost.php';
 
+/**
+ * Class Virtualmin
+ * @package Ricklab\Virtualmin
+ */
 class Virtualmin
 {
 
 
+    /**
+     * @var null|string
+     */
     private $username = '';
+    /**
+     * @var null|string
+     */
     private $password = '';
+    /**
+     * @var null|string
+     */
     protected $host = 'localhost';
+    /**
+     * @var int|null
+     */
     protected $port = 10000;
 
+    /**
+     * @param null $username Virtualmin admin username
+     * @param null $password Virtualmin admin password
+     * @param null $host Virtualmin host (defaults to "localhost")
+     * @param null $port Virtualmin port (defaults to 10000)
+     */
     public function __construct($username = null, $password = null, $host = null, $port = null)
     {
         if ($username !== null) {
@@ -54,6 +76,7 @@ class Virtualmin
      * Runs a program.
      *
      * @param string $program
+     * @throws \RuntimeException if there is a virtualmin error
      * @param array $options
      * @return array results
      */
@@ -87,6 +110,7 @@ class Virtualmin
     /**
      *
      * @param string $domain
+     * @throws \InvalidArgumentException if domain does not exist
      * @return \Ricklab\Virtualmin\virtualHost
      */
     public function getVirtualHostByDomain($domain)
@@ -103,6 +127,7 @@ class Virtualmin
     /**
      *
      * @param string $username
+     * @throws \InvalidArgumentException if username does not exist
      * @return \Ricklab\Virtualmin\virtualHost
      */
     public function getVirtualHostByUsername($username)

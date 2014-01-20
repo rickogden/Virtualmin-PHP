@@ -11,21 +11,38 @@ require_once __DIR__ . '/Virtualmin.php';
 class VirtualHost
 {
 
-    protected $serverName;
+    /**
+     * @var string
+     */
+    protected $domain;
+    /**
+     * @var string
+     */
     protected $email;
+    /**
+     * @var string
+     */
     protected $username;
+    /**
+     * @var array
+     */
     protected $fullDetails = [];
 
     /**
      *
-     * @var Virtualmin
+     * @var \Ricklab\Virtualmin\Virtualmin
      */
     protected $virtualmin;
 
 
-    public function __construct(Virtualmin $virtualmin, $name, $hostDetails = [])
+    /**
+     * @param Virtualmin $virtualmin
+     * @param $name
+     * @param array $hostDetails
+     */
+    public function __construct(Virtualmin $virtualmin, $domain, $hostDetails = [])
     {
-        $this->serverName = $name;
+        $this->domain = $domain;
         $this->fullDetails = $hostDetails;
         if (isset($hostDetails['contact_email'])) {
             $this->email = $hostDetails['contact_email'];
@@ -84,7 +101,7 @@ class VirtualHost
         $this->virtualmin->run(
             'create-database',
             [
-                'domain' => $this->serverName,
+                'domain' => $this->domain,
                 'name' => $name,
                 'type' => $type
             ]
@@ -94,20 +111,22 @@ class VirtualHost
 
     }
 
+    /**
+     * @return array
+     */
     public function listDatabases()
     {
-        return $this->virtualmin->run('list-databases', ['domain' => $this->serverName]);
+        return $this->virtualmin->run('list-databases', ['domain' => $this->domain]);
     }
 
     /**
      *
      * @param mixed $parameters
      * @return \Ricklab\Virtualmin\VirtualHost
-     * @throws \Exception
      */
     protected function modify($parameters = [])
     {
-        $parameters['domain'] = $this->serverName;
+        $parameters['domain'] = $this->domain;
         $this->virtualmin->run('modify-domain', $parameters);
         foreach ($parameters as $key => $value) {
             $this->fullDetails[$key] = $value;
@@ -116,11 +135,15 @@ class VirtualHost
         return $this;
     }
 
+    /**
+     * @param $property
+     * @return mixed
+     */
     public function __get($property)
     {
         switch ($property) {
-            case 'serverName':
-                return $this->serverName;
+            case 'domain':
+                return $this->domain;
                 break;
             case 'email':
                 return $this->email;
@@ -130,5 +153,6 @@ class VirtualHost
                 break;
         }
     }
+
 
 }
