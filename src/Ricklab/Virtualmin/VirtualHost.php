@@ -37,8 +37,8 @@ class VirtualHost
 
     /**
      * @param Virtualmin $virtualmin
-     * @param $name
-     * @param array $hostDetails
+     * @param string $domain domain name
+     * @param array $hostDetails rest of the details returned from Virtualmin
      */
     public function __construct(Virtualmin $virtualmin, $domain, $hostDetails = [])
     {
@@ -80,7 +80,7 @@ class VirtualHost
 
     /**
      *
-     * @param type $email
+     * @param string $email
      * @return \Ricklab\Virtualmin\VirtualHost
      */
     public function changeEmail($email)
@@ -94,6 +94,7 @@ class VirtualHost
     /**
      * @param string $name database name
      * @param string $type the database type: "mysql" or "postgres"
+     * @return \Ricklab\Virtualmin\Virtualmin
      */
     public function createDatabase($name, $type = 'mysql')
     {
