@@ -4,8 +4,7 @@ namespace Ricklab\Virtualmin;
 
 require_once __DIR__ . '/Virtualmin.php';
 /**
- * Virtualmin connection.
- * Requires HTTP_Request2 from paer
+ * VirtualHost.
  * @author Rick Ogden
  */
 
@@ -13,6 +12,8 @@ class VirtualHost
 {
 
     protected $serverName;
+    protected $email;
+    protected $username;
     protected $fullDetails = [];
 
     /**
@@ -21,74 +22,18 @@ class VirtualHost
      */
     protected $virtualmin;
 
-    /**
-     *
-     * @param \Ricklab\Virtualmin\Virtualmin $virtualmin
-     * @param string $args
-     * @return \self
-     * @throws \Exception
-     */
-    public static function get(Virtualmin $virtualmin, $args = [])
-    {
-        $returnArray = $virtualmin->run('list-domains', $args);
-        $hosts = [];
-        if ($returnArray['status'] == 'success') {
-            foreach ($returnArray['data'] as $account) {
-                $hosts[] = new self($virtualmin, $account['name'], $account['values']);
-            }
-        } else {
-            throw new \Exception($returnArray['error']);
-        }
-
-        return $hosts;
-    }
-
-    /**
-     *
-     * @param \Ricklab\Virtualmin\Virtualmin $virtualmin
-     * @param string $username
-     * @return \self
-     */
-    public static function getByUsername(Virtualmin $virtualmin, $username)
-    {
-        try {
-            $returnArray = self::get($virtualmin, ['user' => $username]);
-            if (length($returnArray) == 1) {
-                return $returnArray[0];
-            }
-        } catch (Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     *
-     * @param \Ricklab\Virtualmin\Virtualmin $virtualmin
-     * @param string $domain
-     * @return \self
-     */
-    public static function getByDomain(Virtualmin $virtualmin, $domain)
-    {
-        try {
-            $returnArray = self::get($virtualmin, ['domain' => $domain]);
-            if (length($returnArray) == 1) {
-                return $returnArray[0];
-            }
-        } catch (Exception $e) {
-            return null;
-        }
-    }
 
     public function __construct(Virtualmin $virtualmin, $name, $hostDetails = [])
     {
         $this->serverName = $name;
         $this->fullDetails = $hostDetails;
+        if (isset($hostDetails['contact_email'])) {
+            $this->email = $hostDetails['contact_email'];
+        }
+        if (isset($hostDetails['username'])) {
+            $this->username = $hostDetails['username'];
+        }
         $this->virtualmin = $virtualmin;
-    }
-
-    public function emailUser($subject, $message)
-    {
-
     }
 
     /**
@@ -110,7 +55,10 @@ class VirtualHost
      */
     public function changeQuota($quota)
     {
-        return $this->modify(['quota' => $quota]);
+        $this->modify(['quota' => $quota]);
+        $this->fullDetails['user_quota'] = $quota;
+
+        return $this;
     }
 
     /**
@@ -120,7 +68,35 @@ class VirtualHost
      */
     public function changeEmail($email)
     {
-        return $this->modify(['email' => $email]);
+        $this->modify(['email' => $email]);
+        $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * @param string $name database name
+     * @param string $type the database type: "mysql" or "postgres"
+     */
+    public function createDatabase($name, $type = 'mysql')
+    {
+
+        $this->virtualmin->run(
+            'create-database',
+            [
+                'domain' => $this->serverName,
+                'name' => $name,
+                'type' => $type
+            ]
+        );
+
+        return $this;
+
+    }
+
+    public function listDatabases()
+    {
+        return $this->virtualmin->run('list-databases', ['domain' => $this->serverName]);
     }
 
     /**
@@ -131,9 +107,10 @@ class VirtualHost
      */
     protected function modify($parameters = [])
     {
-        $return = $this->virtualmin->run('modify-domain', array_merge(['domain' => $this->serverName], $parameters));
-        if ($return['status'] == 'failure') {
-            throw new \Exception($return['error']);
+        $parameters['domain'] = $this->serverName;
+        $this->virtualmin->run('modify-domain', $parameters);
+        foreach ($parameters as $key => $value) {
+            $this->fullDetails[$key] = $value;
         }
 
         return $this;
@@ -141,10 +118,16 @@ class VirtualHost
 
     public function __get($property)
     {
-        if ($property == 'serverName') {
-            return $this->serverName;
-        } else {
-            return $this->fullDetails[$property];
+        switch ($property) {
+            case 'serverName':
+                return $this->serverName;
+                break;
+            case 'email':
+                return $this->email;
+                break;
+            default:
+                return $this->fullDetails[$property];
+                break;
         }
     }
 

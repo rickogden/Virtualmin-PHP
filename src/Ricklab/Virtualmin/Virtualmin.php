@@ -2,7 +2,6 @@
 
 /**
  * Virtualmin connection.
- * Requires HTTP_Request2 from paer
  * @author Rick Ogden
  */
 
@@ -47,7 +46,7 @@ class Virtualmin
     {
         $options['domain'] = $domain;
         $this->run('create-domain', $options);
-        return VirtualHost::getByDomain($this, $domain);
+        return $this->getVirtualHostByDomain($domain);
 
     }
 
@@ -76,7 +75,13 @@ class Virtualmin
         );
         $request->setAuth($this->username, $this->password);
 
-        return json_decode($request->send()->getBody(), true);
+        $response = json_decode($request->send()->getBody(), true);
+
+        if ($response['status'] !== 'success') {
+            throw new \RuntimeException($response['error']);
+        }
+
+        return $response['data'];
     }
 
     /**
@@ -86,7 +91,13 @@ class Virtualmin
      */
     public function getVirtualHostByDomain($domain)
     {
-        return VirtualHost::getByDomain($this, $domain);
+
+        $returnArray = $this->getVirtualHosts(['domain' => $domain]);
+        if (count($returnArray) === 1) {
+            return $returnArray[0];
+        } else {
+            throw new \InvalidArgumentException('Domain does not exist');
+        }
     }
 
     /**
@@ -96,16 +107,27 @@ class Virtualmin
      */
     public function getVirtualHostByUsername($username)
     {
-        return VirtualHost::getByUsername($this, $username);
+
+        $returnArray = $this->getVirtualHosts(['user' => $username]);
+        if (count($returnArray) === 1) {
+            return $returnArray[0];
+        } else {
+            throw new \InvalidArgumentException('User does not exist');
+        }
     }
 
     /**
-     *
-     * @return \Ricklab\Virtualmin\virtualHost
+     * @param array $args for filtering vhosts returned
+     * @return array of \Ricklab\Virtualmin\virtualHost
      */
-    public function getAllVirtualHosts()
+    public function getVirtualHosts(array $args = [])
     {
-        return VirtualHost::get($this);
+        $returnArray = $this->run('list-domains', $args);
+        $hosts = [];
+        foreach ($returnArray as $account) {
+            $hosts[] = new VirtualHost($this, $account['name'], $account['values']);
+        }
+        return $hosts;
     }
 
 }
