@@ -13,16 +13,16 @@ Requirements
 Usage
 -----
 
-  $virtualmin = new \Ricklab\Virtualmin\Virtualmin('user', 'pass', 'localhost');
+    $virtualmin = new \Ricklab\Virtualmin\Virtualmin('user', 'pass', 'localhost');
 
-  $vhost = $virtualmin->getVirtualHostByUsername('someusername');
+    $vhost = $virtualmin->getVirtualHostByUsername('someusername');
 
-  $virtualmin->registerDomain('somedomain.com',['pass' => 'somepassword']);
+    $virtualmin->registerDomain('somedomain.com',['pass' => 'somepassword']);
 
-  $vhost2 = $virtualmin->getVirtualHostByDomain('somedomain.com');
+    $vhost2 = $virtualmin->getVirtualHostByDomain('somedomain.com');
 
-  $vhost2->changePassword('anotherpassword');
+    $vhost2->changePassword('anotherpassword');
 
-  $vhost2->changeEmail('new@email.addr');
+    $vhost2->changeEmail('new@email.addr');
 
-  $virtualmin->deleteDomain($vhost);
+    $virtualmin->deleteDomain($vhost);
