@@ -72,6 +72,18 @@ class Virtualmin
 
     }
 
+    public function deleteDomain($domain, $options = [])
+    {
+        if ($domain instanceof VirtualHost) {
+            $options['domain'] = $domain->domain;
+        } else {
+            $options['domain'] = $domain;
+        }
+        $this->run('delete-domain', $options);
+
+        return $this;
+    }
+
     /**
      * Runs a program.
      *
@@ -104,7 +116,11 @@ class Virtualmin
             throw new \RuntimeException($response['error']);
         }
 
-        return $response['data'];
+        if (isset($response['data'])) {
+            return $response['data'];
+        } else {
+            return $response;
+        }
     }
 
     /**
@@ -132,6 +148,7 @@ class Virtualmin
      */
     public function getVirtualHostByUsername($username)
     {
+
 
         $returnArray = $this->getVirtualHosts(['user' => $username]);
         if (count($returnArray) === 1) {
