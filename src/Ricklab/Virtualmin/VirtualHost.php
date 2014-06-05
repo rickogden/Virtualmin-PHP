@@ -142,18 +142,19 @@ class VirtualHost
      */
     public function __get($property)
     {
-        switch ($property) {
+        switch (strtolower($property)) {
             case 'domain':
                 return $this->domain;
                 break;
             case 'email':
                 return $this->email;
                 break;
+            case 'fulldetails':
+                return $this->fullDetails;
             default:
                 return $this->fullDetails[$property];
                 break;
         }
     }
-
 
 }
