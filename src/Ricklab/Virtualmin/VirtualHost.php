@@ -151,6 +151,7 @@ class VirtualHost
                 break;
             case 'fulldetails':
                 return $this->fullDetails;
+                break;
             default:
                 return $this->fullDetails[$property];
                 break;
