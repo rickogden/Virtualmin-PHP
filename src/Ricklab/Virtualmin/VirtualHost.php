@@ -94,7 +94,8 @@ class VirtualHost
     /**
      * @param string $name database name
      * @param string $type the database type: "mysql" or "postgres"
-     * @return \Ricklab\Virtualmin\Virtualmin
+     *
+     * @return \Ricklab\Virtualmin\VirtualHost
      */
     public function createDatabase($name, $type = 'mysql')
     {
@@ -137,25 +138,39 @@ class VirtualHost
     }
 
     /**
-     * @param $property
-     * @return mixed
+     * @return string
      */
-    public function __get($property)
+    public function getDomain()
     {
-        switch (strtolower($property)) {
-            case 'domain':
-                return $this->domain;
-                break;
-            case 'email':
-                return $this->email;
-                break;
-            case 'fulldetails':
-                return $this->fullDetails;
-                break;
-            default:
-                return $this->fullDetails[$property];
-                break;
-        }
+        return $this->domain;
     }
+
+    /**
+     * @return string
+     */
+    public function getEmail()
+    {
+        return $this->email;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUsername()
+    {
+        return $this->username;
+    }
+
+    /**
+     * @return array
+     */
+    public function getFullDetails()
+    {
+        return $this->fullDetails;
+    }
+
+
+
+
 
 }

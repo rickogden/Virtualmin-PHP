@@ -7,7 +7,8 @@
 
 namespace Ricklab\Virtualmin;
 
-use Guzzle\Http\Client;
+use GuzzleHttp\Client;
+use Ricklab\Virtualmin\Exception\VirtualHostNotFoundException;
 
 require_once __DIR__ . '/VirtualHost.php';
 
@@ -18,44 +19,24 @@ require_once __DIR__ . '/VirtualHost.php';
 class Virtualmin
 {
 
+    /**
+     * @var Client
+     */
+    protected $client;
 
     /**
-     * @var null|string
+     * @var string[]
      */
-    private $username = '';
-    /**
-     * @var null|string
-     */
-    private $password = '';
-    /**
-     * @var null|string
-     */
-    protected $host = 'localhost';
-    /**
-     * @var int|null
-     */
-    protected $port = 10000;
+    protected $auth;
 
     /**
-     * @param null $username Virtualmin admin username
-     * @param null $password Virtualmin admin password
-     * @param null $host Virtualmin host (defaults to "localhost")
-     * @param null $port Virtualmin port (defaults to 10000)
+     * @param Client $guzzleClient A Guzzle client set up to interface with Virtualmin
+     * @param string[] $auth The auth credentials.
      */
-    public function __construct($username = null, $password = null, $host = null, $port = null)
+    public function __construct(Client $guzzleClient, $auth = [])
     {
-        if ($username !== null) {
-            $this->username = $username;
-        }
-        if ($password !== null) {
-            $this->password = $password;
-        }
-        if ($host !== null) {
-            $this->host = $host;
-        }
-        if ($port !== null) {
-            $this->port = $port;
-        }
+        $this->client = $guzzleClient;
+        $this->auth   = $auth;
     }
 
     /**
@@ -75,7 +56,7 @@ class Virtualmin
     public function deleteDomain($domain, $options = [])
     {
         if ($domain instanceof VirtualHost) {
-            $options['domain'] = $domain->domain;
+            $options['domain'] = $domain->getDomain();
         } else {
             $options['domain'] = $domain;
         }
@@ -97,36 +78,35 @@ class Virtualmin
 
         $options['program'] = $program;
         $options['multiline'] = '';
-        $options['json'] = '1';
-
-        $client = new Client('https://' . $this->host . ':' . $this->port);
-        $client->setSslVerification(false);
-        $request = $client->get(
-            '/virtual-server/remote.cgi',
-            [],
+        $options['json'] = 1;
+        $response = $this->client->request('GET',
+            'virtual-server/remote.cgi',
             [
-                'query' => $options
+                'query' => $options,
+                'auth'  => $this->auth
             ]
         );
-        $request->setAuth($this->username, $this->password);
 
-        $response = json_decode($request->send()->getBody(), true);
+        $json = \GuzzleHttp\json_decode($response->getBody()->getContents(), true);
 
-        if ($response['status'] !== 'success') {
-            throw new \RuntimeException($response['error']);
+        if ($json['status'] !== 'success') {
+            throw new \RuntimeException($json['error']);
         }
 
-        if (isset($response['data'])) {
-            return $response['data'];
+        if (isset($json['data'])) {
+            return $json['data'];
+        } elseif (isset($json['output'])) {
+            return $json['output'];
         } else {
-            return $response;
+            return $json;
         }
     }
 
     /**
      *
      * @param string $domain
-     * @throws \InvalidArgumentException if domain does not exist
+     *
+     * @throws VirtualHostNotFoundException if domain does not exist
      * @return \Ricklab\Virtualmin\virtualHost
      */
     public function getVirtualHostByDomain($domain)
@@ -136,14 +116,15 @@ class Virtualmin
         if (count($returnArray) === 1) {
             return $returnArray[0];
         } else {
-            throw new \InvalidArgumentException('Domain does not exist');
+            throw new VirtualHostNotFoundException('Domain does not exist');
         }
     }
 
     /**
      *
      * @param string $username
-     * @throws \InvalidArgumentException if username does not exist
+     *
+     * @throws VirtualHostNotFoundException if username does not exist
      * @return \Ricklab\Virtualmin\virtualHost
      */
     public function getVirtualHostByUsername($username)
@@ -154,7 +135,7 @@ class Virtualmin
         if (count($returnArray) === 1) {
             return $returnArray[0];
         } else {
-            throw new \InvalidArgumentException('User does not exist');
+            throw new VirtualHostNotFoundException('User does not exist');
         }
     }
 

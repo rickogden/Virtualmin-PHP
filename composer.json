@@ -2,7 +2,6 @@
     "name": "ricklab/virtualmin",
     "description": "Interface with the VirtualMin HTTP API",
     "keywords": ["virtualmin", "virtualhost"],
-    "version": "1.1.0-dev",
     "license": "BSD-3-Clause",
     "minimum-stability": "dev",
     "authors": [
@@ -12,13 +11,13 @@
         }
     ],
     "require": {
-        "php": ">=5.4",
-        "guzzle/guzzle": "3.8.*"
+        "php": ">=5.6",
+        "guzzlehttp/guzzle": "~6.0"
 
     },
     "autoload": {
-        "psr-0": {
-            "Ricklab\\Virtualmin": "src/"
+        "psr-4": {
+            "Ricklab\\Virtualmin\\": "src/Ricklab/Virtualmin"
         }
     }
 }
