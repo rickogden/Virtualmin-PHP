@@ -7,8 +7,9 @@
 
 namespace Ricklab\Virtualmin;
 
-use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use Ricklab\Virtualmin\Exception\VirtualHostNotFoundException;
+use Ricklab\Virtualmin\Exception\VirtualminException;
 
 require_once __DIR__ . '/VirtualHost.php';
 
@@ -20,7 +21,7 @@ class Virtualmin
 {
 
     /**
-     * @var Client
+     * @var ClientInterface
      */
     protected $client;
 
@@ -30,10 +31,10 @@ class Virtualmin
     protected $auth;
 
     /**
-     * @param Client $guzzleClient A Guzzle client set up to interface with Virtualmin
+     * @param ClientInterface $guzzleClient A Guzzle client set up to interface with Virtualmin
      * @param string[] $auth The auth credentials.
      */
-    public function __construct(Client $guzzleClient, $auth = [])
+    public function __construct(ClientInterface $guzzleClient, $auth = [])
     {
         $this->client = $guzzleClient;
         $this->auth   = $auth;
@@ -69,15 +70,20 @@ class Virtualmin
      * Runs a program.
      *
      * @param string $program
-     * @throws \RuntimeException if there is a virtualmin error
+     *
+     * @throws VirtualminException if there is a virtualmin error
+     *
      * @param array $options
+     * @param bool $multiline if a multiline response is required. Defaults to true.
+     *
      * @return array results
      */
-    public function run($program, array $options = [])
+    public function run($program, array $options = [], $multiline = true)
     {
 
         $options['program'] = $program;
-        $options['multiline'] = '';
+        if ($multiline)
+            $options['multiline'] = '';
         $options['json'] = 1;
         $response = $this->client->request('GET',
             'virtual-server/remote.cgi',
@@ -90,7 +96,7 @@ class Virtualmin
         $json = \GuzzleHttp\json_decode($response->getBody()->getContents(), true);
 
         if ($json['status'] !== 'success') {
-            throw new \RuntimeException($json['error']);
+            throw new VirtualminException($json);
         }
 
         if (isset($json['data'])) {
@@ -105,14 +111,15 @@ class Virtualmin
     /**
      *
      * @param string $domain
+     * @param bool $populateFull populate the full details from the start (slow but prevents 2 requests)
      *
      * @throws VirtualHostNotFoundException if domain does not exist
      * @return \Ricklab\Virtualmin\virtualHost
      */
-    public function getVirtualHostByDomain($domain)
+    public function getVirtualHostByDomain($domain, $populateFull = false)
     {
 
-        $returnArray = $this->getVirtualHosts(['domain' => $domain]);
+        $returnArray = $this->getVirtualHosts(['domain' => $domain], $populateFull);
         if (count($returnArray) === 1) {
             return $returnArray[0];
         } else {
@@ -124,14 +131,16 @@ class Virtualmin
      *
      * @param string $username
      *
+     * @param bool $populateFull populate the full details from the start (slow but prevents 2 requests)
+     *
+     * @return virtualHost if username does not exist
      * @throws VirtualHostNotFoundException if username does not exist
-     * @return \Ricklab\Virtualmin\virtualHost
      */
-    public function getVirtualHostByUsername($username)
+    public function getVirtualHostByUsername($username, $populateFull = false)
     {
 
 
-        $returnArray = $this->getVirtualHosts(['user' => $username]);
+        $returnArray = $this->getVirtualHosts(['user' => $username], $populateFull);
         if (count($returnArray) === 1) {
             return $returnArray[0];
         } else {
@@ -140,12 +149,29 @@ class Virtualmin
     }
 
     /**
-     * @param array $args for filtering vhosts returned
-     * @return array of \Ricklab\Virtualmin\virtualHost
+     * @param $username
+     * @param bool $populateFull populate the full details from the start (slow but prevents 2 requests)
+     *
+     * @return VirtualHost[]
      */
-    public function getVirtualHosts(array $args = [])
+    public function getVirtualHostsByUsername($username, $populateFull = false)
     {
-        $returnArray = $this->run('list-domains', $args);
+        $returnArray = $this->getVirtualHosts(['user' => $username], $populateFull);
+
+        return $returnArray;
+    }
+
+    /**
+     * @param array $args for filtering vhosts returned
+     * @param bool $populateFull populate the full details from the start (slow but prevents 2 requests)
+     * @return VirtualHost[]
+     */
+    public function getVirtualHosts(array $args = [], $populateFull = false)
+    {
+
+        if ( ! $populateFull)
+            $args['name-only'] = '';
+        $returnArray = $this->run('list-domains', $args, $populateFull);
         $hosts = [];
         foreach ($returnArray as $account) {
             $hosts[] = new VirtualHost($this, $account['name'], $account['values']);

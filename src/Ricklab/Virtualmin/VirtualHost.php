@@ -2,12 +2,12 @@
 
 namespace Ricklab\Virtualmin;
 
-require_once __DIR__ . '/Virtualmin.php';
+use Ricklab\Virtualmin\Exception\VirtualminException;
+
 /**
  * VirtualHost.
  * @author Rick Ogden
  */
-
 class VirtualHost
 {
 
@@ -15,14 +15,6 @@ class VirtualHost
      * @var string
      */
     protected $domain;
-    /**
-     * @var string
-     */
-    protected $email;
-    /**
-     * @var string
-     */
-    protected $username;
     /**
      * @var array
      */
@@ -42,22 +34,17 @@ class VirtualHost
      */
     public function __construct(Virtualmin $virtualmin, $domain, $hostDetails = [])
     {
-        $this->domain = $domain;
+        $this->domain      = $domain;
         $this->fullDetails = $hostDetails;
-        if (isset($hostDetails['contact_email'])) {
-            $this->email = $hostDetails['contact_email'];
-        }
-        if (isset($hostDetails['username'])) {
-            $this->username = $hostDetails['username'];
-        }
-        $this->virtualmin = $virtualmin;
+        $this->virtualmin  = $virtualmin;
     }
 
     /**
      *
      * @param string $password
+     *
      * @return \Ricklab\Virtualmin\VirtualHost
-     * @throws \Exception
+     * @throws VirtualminException
      */
     public function changePassword($password)
     {
@@ -68,6 +55,7 @@ class VirtualHost
     /**
      *
      * @param int $quota
+     *
      * @return \Ricklab\Virtualmin\VirtualHost
      */
     public function changeQuota($quota)
@@ -81,12 +69,13 @@ class VirtualHost
     /**
      *
      * @param string $email
+     *
      * @return \Ricklab\Virtualmin\VirtualHost
      */
     public function changeEmail($email)
     {
         $this->modify(['email' => $email]);
-        $this->email = $email;
+        $this->fullDetails['contact_email'] = [$email];
 
         return $this;
     }
@@ -104,8 +93,8 @@ class VirtualHost
             'create-database',
             [
                 'domain' => $this->domain,
-                'name' => $name,
-                'type' => $type
+                'name'   => $name,
+                'type'   => $type
             ]
         );
 
@@ -124,6 +113,7 @@ class VirtualHost
     /**
      *
      * @param mixed $parameters
+     *
      * @return \Ricklab\Virtualmin\VirtualHost
      */
     protected function modify($parameters = [])
@@ -131,7 +121,7 @@ class VirtualHost
         $parameters['domain'] = $this->domain;
         $this->virtualmin->run('modify-domain', $parameters);
         foreach ($parameters as $key => $value) {
-            $this->fullDetails[$key] = $value;
+            $this->fullDetails[$key] = [$value];
         }
 
         return $this;
@@ -150,7 +140,7 @@ class VirtualHost
      */
     public function getEmail()
     {
-        return $this->email;
+        return $this->getFullDetails()['contact_email'][0];
     }
 
     /**
@@ -158,7 +148,7 @@ class VirtualHost
      */
     public function getUsername()
     {
-        return $this->username;
+        return $this->getFullDetails()['username'][0];
     }
 
     /**
@@ -166,10 +156,40 @@ class VirtualHost
      */
     public function getFullDetails()
     {
+        if (empty($this->fullDetails)) {
+            $response          = $this->virtualmin->run('list-domains', ['domain' => $this->domain]);
+            $this->fullDetails = $response[0]['values'];
+        }
         return $this->fullDetails;
     }
 
 
+    public function changeMysqlPassword($password)
+    {
+        return $this->changeDbPassword('mysql', $password);
+
+    }
+
+    public function changePostgresPassword($password)
+    {
+        return $this->changeDbPassword('postgres', $password);
+    }
+
+    protected function changeDbPassword($db, $password)
+    {
+        return $this->virtualmin->run('modify-database-pass',
+            ['domain' => $this->getDomain(), 'type' => $db, 'pass' => $password]);
+    }
+
+    public function createPostgresDatabase($dbname)
+    {
+        return $this->createDatabase($dbname, 'mysql');
+    }
+
+    public function createMysqlDatabase($dbname)
+    {
+        $this->createDatabase($dbname, 'postgres');
+    }
 
 
 
